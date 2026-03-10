@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    /* Figma CSS Variables */
+    :root {
+      --bg-color: var(--figma-color-bg, #ffffff);
+      --text-color: var(--figma-color-text, #333333);
+      --text-secondary: var(--figma-color-text-secondary, #888888);
+      --border-color: var(--figma-color-border, #e5e5e5);
+      --primary-color: var(--figma-color-bg-brand, #18a0fb);
+      --primary-text: var(--figma-color-text-onbrand, #ffffff);
+      --hover-color: var(--figma-color-bg-hover, #f5f5f5);
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header / Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+      padding: 0 8px;
+    }
+
+    .tab {
+      padding: 12px 16px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .tab.active {
+      color: var(--text-color);
+      border-bottom-color: var(--text-color);
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--text-color);
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      position: relative;
+    }
+
+    /* Code Block */
+    .code-container {
+      background-color: var(--hover-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Roboto Mono', Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text-color);
+    }
+
+    /* Copy Button */
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-color);
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .copy-btn:hover {
+      background: var(--hover-color);
+    }
+
+    .copy-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      fill: var(--text-secondary);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background-color: var(--text-color);
+      color: var(--bg-color);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Properties List */
+    .prop-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .prop-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .prop-item:last-child {
+      border-bottom: none;
+    }
+
+    .prop-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .prop-value {
+      font-family: 'Roboto Mono', Consolas, monospace;
+      background: var(--hover-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <div class="tab active" data-framework="css">CSS</div>
+    <div class="tab" data-framework="react">React</div>
+    <div class="tab" data-framework="vue">Vue</div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="empty-state" id="empty-state">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+      </svg>
+      <div>Select a layer to inspect</div>
+    </div>
+    <div id="inspect-view" style="display: none;">
+      <div class="section-title">Properties</div>
+      <div class="prop-list" id="prop-list"></div>
+      
+      <div class="section-title">Code</div>
+      <div class="code-container">
+        <button class="copy-btn" id="copy-btn">Copy</button>
+        <pre id="code-block"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <script>
+    let currentFramework = 'css';
+    let currentNodeData = null;
+
+    const tabs = document.querySelectorAll('.tab');
+    const emptyState = document.getElementById('empty-state');
+    const inspectView = document.getElementById('inspect-view');
+    const codeBlock = document.getElementById('code-block');
+    const propList = document.getElementById('prop-list');
+    const copyBtn = document.getElementById('copy-btn');
+    const toast = document.getElementById('toast');
+
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFramework = tab.dataset.framework;
+        renderCode();
+      });
+    });
+
+    // Copy to clipboard
+    copyBtn.addEventListener('click', () => {
+      const code = codeBlock.textContent;
+      if (!code) return;
+      
+      // Use modern clipboard API if available
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(code).then(() => {
+          showToast();
+        }).catch(err => {
+          fallbackCopyTextToClipboard(code);
+        });
+      } else {
+        fallbackCopyTextToClipboard(code);
+      }
+    });
+
+    function fallbackCopyTextToClipboard(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Avoid scrolling to bottom
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        document.execCommand('copy');
+        showToast();
+      } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+      }
+
+      document.body.removeChild(textArea);
+    }
+
+    function showToast() {
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // Message from plugin code
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg.type === 'selection-cleared') {
+        currentNodeData = null;
+        render();
+      } else if (msg.type === 'selection-updated') {
+        currentNodeData = msg.data[0]; // Handle first selected node
+        render();
+      }
+    };
+
+    function render() {
+      if (!currentNodeData) {
+        emptyState.style.display = 'flex';
+        inspectView.style.display = 'none';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      inspectView.style.display = 'block';
+
+      renderProps();
+      renderCode();
+    }
+
+    function renderProps() {
+      const data = currentNodeData;
+      let html = '';
+      
+      const addProp = (label, value) => {
+        if (value !== undefined && value !== null && value !== 'mixed') {
+          html += `<div class="prop-item"><span class="prop-label">${label}</span><span class="prop-value">${value}</span></div>`;
+        }
+      };
+
+      addProp('Name', data.name);
+      addProp('Type', data.type);
+      addProp('Width', `${Math.round(data.width)}px`);
+      addProp('Height', `${Math.round(data.height)}px`);
+      addProp('X', `${Math.round(data.x)}px`);
+      addProp('Y', `${Math.round(data.y)}px`);
+      
+      if (data.fills && data.fills.length > 0) {
+        addProp('Fill', data.fills[0].hex);
+      }
+      
+      if (data.strokes && data.strokes.length > 0) {
+        addProp('Stroke', data.strokes[0].hex);
+      }
+
+      if (data.cornerRadius && data.cornerRadius !== 'mixed') {
+        addProp('Radius', `${data.cornerRadius}px`);
+      }
+      
+      if (data.typography) {
+        addProp('Font', data.typography.fontFamily);
+        addProp('Size', `${data.typography.fontSize}px`);
+        addProp('Weight', data.typography.fontWeight);
+      }
+
+      propList.innerHTML = html;
+    }
+
+    function generateCSS(data) {
+      let css = `/* ${data.name} */\n`;
+      css += `width: ${Math.round(data.width)}px;\n`;
+      css += `height: ${Math.round(data.height)}px;\n`;
+      
+      if (data.fills && data.fills.length > 0) {
+        css += `background: ${data.fills[0].rgba};\n`;
+      }
+      
+      if (data.strokes && data.strokes.length > 0) {
+        css += `border: 1px solid ${data.strokes[0].rgba};\n`;
+      }
+      
+      if (data.cornerRadius && data.cornerRadius !== 'mixed') {
+        css += `border-radius: ${data.cornerRadius}px;\n`;
+      }
+      
+      if (data.typography) {
+        css += `font-family: "${data.typography.fontFamily}";\n`;
+        if (data.typography.fontSize !== 'mixed') {
+          css += `font-size: ${data.typography.fontSize}px;\n`;
+        }
+        css += `font-weight: ${data.typography.fontWeight};\n`;
+        if (data.typography.lineHeight !== 'mixed') {
+          css += `line-height: ${data.typography.lineHeight};\n`;
+        }
+      }
+      
+      return css;
+    }
+
+    function generateReact(data) {
+      let style = `const style = {\n`;
+      style += `  width: '${Math.round(data.width)}px',\n`;
+      style += `  height: '${Math.round(data.height)}px',\n`;
+      
+      if (data.fills && data.fills.length > 0) {
+        style += `  background: '${data.fills[0].rgba}',\n`;
+      }
+      
+      if (data.strokes && data.strokes.length > 0) {
+        style += `  border: '1px solid ${data.strokes[0].rgba}',\n`;
+      }
+      
+      if (data.cornerRadius && data.cornerRadius !== 'mixed') {
+        style += `  borderRadius: '${data.cornerRadius}px',\n`;
+      }
+      
+      if (data.typography) {
+        style += `  fontFamily: '"${data.typography.fontFamily}"',\n`;
+        if (data.typography.fontSize !== 'mixed') {
+          style += `  fontSize: '${data.typography.fontSize}px',\n`;
+        }
+        style += `  fontWeight: ${data.typography.fontWeight},\n`;
+        if (data.typography.lineHeight !== 'mixed') {
+          style += `  lineHeight: '${data.typography.lineHeight}',\n`;
+        }
+      }
+      
+      style += `};\n\n`;
+      style += `return (\n  <div style={style}>\n    {/* ${data.name} */}\n  </div>\n);`;
+      
+      return style;
+    }
+
+    function generateVue(data) {
+      const className = `node-${data.id.replace(':', '-')}`;
+      let style = `<style scoped>\n`;
+      style += `.${className} {\n`;
+      style += `  width: ${Math.round(data.width)}px;\n`;
+      style += `  height: ${Math.round(data.height)}px;\n`;
+      
+      if (data.fills && data.fills.length > 0) {
+        style += `  background: ${data.fills[0].rgba};\n`;
+      }
+      
+      if (data.strokes && data.strokes.length > 0) {
+        style += `  border: 1px solid ${data.strokes[0].rgba};\n`;
+      }
+      
+      if (data.cornerRadius && data.cornerRadius !== 'mixed') {
+        style += `  border-radius: ${data.cornerRadius}px;\n`;
+      }
+      
+      if (data.typography) {
+        style += `  font-family: "${data.typography.fontFamily}";\n`;
+        if (data.typography.fontSize !== 'mixed') {
+          style += `  font-size: ${data.typography.fontSize}px;\n`;
+        }
+        style += `  font-weight: ${data.typography.fontWeight};\n`;
+        if (data.typography.lineHeight !== 'mixed') {
+          style += `  line-height: ${data.typography.lineHeight};\n`;
+        }
+      }
+      
+      style += `}\n</style>\n\n`;
+      style += `<template>\n  <div class="${className}">\n    <!-- ${data.name} -->\n  </div>\n</template>`;
+      
+      return style;
+    }
+
+    function renderCode() {
+      if (!currentNodeData) return;
+      
+      let code = '';
+      if (currentFramework === 'css') {
+        code = generateCSS(currentNodeData);
+      } else if (currentFramework === 'react') {
+        code = generateReact(currentNodeData);
+      } else if (currentFramework === 'vue') {
+        code = generateVue(currentNodeData);
+      }
+      codeBlock.textContent = code;
+    }
+  </script>
+</body>
+</html>
